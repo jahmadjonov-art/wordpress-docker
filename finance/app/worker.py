@@ -8,6 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from . import config
 from .db import SessionLocal, init_db
 from .scrapers import craigslist as cl
+from .scrapers import truckpaper, trucktrader, mylittlesalesman
 from .scoring.market import compute_cohort_stats
 from .scoring.engine import rescore_all
 from . import models
@@ -21,6 +22,24 @@ def job_scrape_craigslist():
     with SessionLocal() as db:
         result = cl.run(db)
         log.info("craigslist: %s", result)
+
+
+def job_scrape_truckpaper():
+    with SessionLocal() as db:
+        result = truckpaper.run(db)
+        log.info("truckpaper: %s", result)
+
+
+def job_scrape_trucktrader():
+    with SessionLocal() as db:
+        result = trucktrader.run(db)
+        log.info("trucktrader: %s", result)
+
+
+def job_scrape_mylittlesalesman():
+    with SessionLocal() as db:
+        result = mylittlesalesman.run(db)
+        log.info("mylittlesalesman: %s", result)
 
 
 def job_recompute_market():
@@ -52,8 +71,15 @@ def main():
     sched.add_job(job_recompute_market, "cron", hour=9, minute=0, id="recompute_market")
     sched.add_job(job_snapshot_savings, "cron", hour=12, minute=0, day_of_week="sun", id="snapshot_savings")
 
+    sched.add_job(job_scrape_truckpaper, "interval", hours=config.SCRAPE_INTERVAL_HOURS, id="scrape_truckpaper")
+    sched.add_job(job_scrape_trucktrader, "interval", hours=config.SCRAPE_INTERVAL_HOURS, id="scrape_trucktrader")
+    sched.add_job(job_scrape_mylittlesalesman, "interval", hours=config.SCRAPE_INTERVAL_HOURS, id="scrape_mylittlesalesman")
+
     # kick off once at boot
     sched.add_job(job_scrape_craigslist, "date", id="bootstrap_scrape")
+    sched.add_job(job_scrape_truckpaper, "date", id="bootstrap_truckpaper")
+    sched.add_job(job_scrape_trucktrader, "date", id="bootstrap_trucktrader")
+    sched.add_job(job_scrape_mylittlesalesman, "date", id="bootstrap_mylittlesalesman")
     sched.add_job(job_recompute_market, "date", id="bootstrap_market")
 
     def _shutdown(signum, frame):
