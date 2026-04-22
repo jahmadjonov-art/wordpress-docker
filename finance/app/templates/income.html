@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Income{% endblock %}
+{% block content %}
+<h1>Weekly income</h1>
+
+<form method="post" action="/income/" class="grid-form">
+  <label>Week ending (Sunday) <input type="date" name="week_ending" required></label>
+  <label>Gross $ <input type="number" step="0.01" name="gross" required></label>
+  <label>Net $ (take-home) <input type="number" step="0.01" name="net"></label>
+  <label>Miles driven <input type="number" name="miles"></label>
+  <label>Source <input type="text" name="source" value="W-2 company driver"></label>
+  <label class="full">Notes <input type="text" name="notes"></label>
+  <button type="submit">Add</button>
+</form>
+
+<table class="ledger">
+  <tr><th>Week ending</th><th>Gross</th><th>Net</th><th>Miles</th><th>Source</th><th>Notes</th><th></th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.week_ending }}</td>
+    <td>{{ r.gross_cents | money }}</td>
+    <td>{{ r.net_cents | money }}</td>
+    <td>{{ r.miles | miles }}</td>
+    <td>{{ r.source }}</td>
+    <td>{{ r.notes or "" }}</td>
+    <td>
+      <form method="post" action="/income/{{ r.id }}/delete">
+        <button class="danger" onclick="return confirm('Delete?')">x</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

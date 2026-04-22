@@ -23,5 +23,30 @@ services:
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
 
+  finance:
+    build: ./finance
+    ports:
+      - "8001:8000"
+    volumes:
+      - finance_data:/data
+      - ./finance/app:/srv/app
+    restart: unless-stopped
+    env_file:
+      - ./finance/.env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  finance-worker:
+    build: ./finance
+    volumes:
+      - finance_data:/data
+      - ./finance/app:/srv/app
+    restart: unless-stopped
+    env_file:
+      - ./finance/.env
+    command: python -m app.worker
+    depends_on:
+      - finance
+
 volumes:
   db_data:
+  finance_data:

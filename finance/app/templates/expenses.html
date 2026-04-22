@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Expenses{% endblock %}
+{% block content %}
+<h1>Monthly expenses</h1>
+
+<form method="post" action="/expenses/" class="grid-form">
+  <label>Month (YYYY-MM) <input type="month" name="month" required></label>
+  <label>Category
+    <select name="category" required>
+      {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Amount $ <input type="number" step="0.01" name="amount" required></label>
+  <label class="full">Notes <input type="text" name="notes"></label>
+  <button type="submit">Add</button>
+</form>
+
+<table class="ledger">
+  <tr><th>Month</th><th>Category</th><th>Amount</th><th>Notes</th><th></th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.month }}</td>
+    <td>{{ r.category }}</td>
+    <td>{{ r.amount_cents | money }}</td>
+    <td>{{ r.notes or "" }}</td>
+    <td>
+      <form method="post" action="/expenses/{{ r.id }}/delete">
+        <button class="danger" onclick="return confirm('Delete?')">x</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

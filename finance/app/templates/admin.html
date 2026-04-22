@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<h1>Admin</h1>
+
+<section>
+  <h2>Status</h2>
+  <ul>
+    <li>Total listings: {{ counts.listings }} ({{ counts.active }} active)</li>
+    <li>Total score rows: {{ counts.scores }}</li>
+    <li>Craigslist metros: <code>{{ config.metros | join(', ') }}</code></li>
+    <li>Scrape interval: every {{ config.interval_h }} hours</li>
+    <li>CA operation penalty: {{ "on" if config.ca_op else "off" }}</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Actions</h2>
+  <form method="post" action="/admin/scrape" style="display:inline">
+    <button>Run Craigslist scrape now</button>
+  </form>
+  <form method="post" action="/admin/rescore" style="display:inline">
+    <button>Recompute market stats + rescore all</button>
+  </form>
+  <a href="/admin/backup"><button type="button">Download SQLite backup</button></a>
+</section>
+
+<section>
+  <h2>Exports</h2>
+  <ul>
+    <li><a href="/export/income.csv">income.csv</a></li>
+    <li><a href="/export/expenses.csv">expenses.csv</a></li>
+    <li><a href="/export/listings.csv">listings.csv</a></li>
+  </ul>
+</section>
+
+<section>
+  <h2>Recent scrape runs</h2>
+  <table class="ledger">
+    <tr><th>Source</th><th>Started</th><th>New</th><th>Updated</th><th>Status</th><th>Errors</th></tr>
+    {% for r in runs %}
+    <tr>
+      <td>{{ r.source }}</td>
+      <td>{{ r.started_at }}</td>
+      <td>{{ r.listings_new }}</td>
+      <td>{{ r.listings_updated }}</td>
+      <td>{{ r.status }}</td>
+      <td><small>{{ (r.errors_json or '')[:100] }}</small></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section>
+  <h2>Top cohorts (by sample size)</h2>
+  <table class="ledger">
+    <tr><th>Cohort</th><th>N</th><th>Median</th><th>P25</th><th>P75</th></tr>
+    {% for s in stats %}
+    <tr>
+      <td><code>{{ s.cohort_key }}</code></td>
+      <td>{{ s.sample_count }}</td>
+      <td>{{ s.median_cents | money }}</td>
+      <td>{{ s.p25_cents | money }}</td>
+      <td>{{ s.p75_cents | money }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

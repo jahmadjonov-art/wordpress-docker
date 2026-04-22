@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Trucker Finance{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topnav">
+  <div class="brand"><a href="/">Trucker Finance</a></div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/income/">Income</a>
+    <a href="/expenses/">Expenses</a>
+    <a href="/goal/">Goal</a>
+    <a href="/listings/">Deals</a>
+    <a href="/listings/manual">+ Manual</a>
+    <a href="/listings/import">+ Import URL</a>
+    <a href="/admin/">Admin</a>
+  </nav>
+</header>
+<main>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Import listing by URL{% endblock %}
+{% block content %}
+<h1>Import listing from URL</h1>
+
+<form method="post" action="/listings/import/preview" class="grid-form">
+  <label class="full">URL <input type="url" name="url" value="{{ url or '' }}" required placeholder="https://www.truckpaper.com/listing/..."></label>
+  <button type="submit">Fetch & preview</button>
+</form>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+<p class="muted">Fall back to the <a href="/listings/manual">manual form</a> and paste the listing text there — the scorer will read keywords from the description.</p>
+{% endif %}
+
+{% if preview %}
+<section>
+  <h2>Preview — review and confirm</h2>
+  <form method="post" action="/listings/import/confirm" class="grid-form">
+    <input type="hidden" name="source" value="{{ preview.source }}">
+    <input type="hidden" name="source_url" value="{{ preview.source_url }}">
+    <input type="hidden" name="fetch_method" value="paste">
+
+    <label class="full">Title <input type="text" name="title" value="{{ preview.title or '' }}" required></label>
+    <label>Asking $ <input type="number" step="1" name="asking_price" value="{{ (preview.asking_price_cents / 100) | round(0) | int if preview.asking_price_cents else '' }}"></label>
+    <label>Category
+      <select name="category">
+        {% for c in ['truck_sleeper','truck_daycab','trailer_dryvan_53','trailer_reefer','other'] %}
+        <option value="{{ c }}" {% if preview.category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Year <input type="number" name="year" value="{{ preview.year or '' }}"></label>
+    <label>Make <input type="text" name="make" value="{{ preview.make or '' }}"></label>
+    <label>Model <input type="text" name="model" value="{{ preview.model or '' }}"></label>
+    <label>Engine <input type="text" name="engine" value="{{ preview.engine or '' }}"></label>
+    <label>Mileage <input type="number" name="mileage" value="{{ preview.mileage or '' }}"></label>
+    <label>VIN <input type="text" name="vin" value="{{ preview.vin or '' }}"></label>
+    <label>Trailer length <input type="number" name="trailer_length_ft" value="{{ preview.trailer_length_ft or '' }}"></label>
+    <label>Trailer walls
+      <select name="trailer_walls">
+        <option value="">—</option>
+        {% for v in ['composite','aluminum_sheet_post','aluminum_smooth'] %}
+        <option value="{{ v }}" {% if preview.trailer_walls == v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Trailer door
+      <select name="trailer_door">
+        <option value="">—</option>
+        {% for v in ['swing','rollup'] %}
+        <option value="{{ v }}" {% if preview.trailer_door == v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Trailer suspension
+      <select name="trailer_suspension">
+        <option value="">—</option>
+        {% for v in ['air','spring'] %}
+        <option value="{{ v }}" {% if preview.trailer_suspension == v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label class="full">Description (editable — scorer reads keywords from here)
+      <textarea name="description" rows="8">{{ preview.description or '' }}</textarea>
+    </label>
+
+    <button type="submit">Save & score</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
