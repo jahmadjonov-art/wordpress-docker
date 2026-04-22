@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Manual listing{% endblock %}
+{% block content %}
+<h1>Add listing manually</h1>
+<p class="muted">Use this for FB Marketplace copy-paste, phone calls from friends, or anywhere the URL importer couldn't fetch. Fill what you know — the scorer penalizes missing fields.</p>
+
+<form method="post" action="/listings/manual" class="grid-form">
+  <label>Source
+    <select name="source">
+      <option value="fb_marketplace">fb_marketplace</option>
+      <option value="manual">manual</option>
+      <option value="craigslist">craigslist</option>
+      <option value="truckpaper">truckpaper</option>
+      <option value="commercial_truck_trader">commercial_truck_trader</option>
+      <option value="mylittlesalesman">mylittlesalesman</option>
+      <option value="ebay">ebay</option>
+    </select>
+  </label>
+  <label>Source URL <input type="url" name="source_url" placeholder="https://..."></label>
+  <label>Category
+    <select name="category" required>
+      <option value="truck_sleeper">truck_sleeper</option>
+      <option value="truck_daycab">truck_daycab</option>
+      <option value="trailer_dryvan_53">trailer_dryvan_53</option>
+      <option value="trailer_reefer">trailer_reefer</option>
+      <option value="other">other</option>
+    </select>
+  </label>
+  <label class="full">Title <input type="text" name="title" required placeholder="2017 Freightliner Cascadia DD15 — 480k"></label>
+  <label>Asking $ <input type="number" step="1" name="asking_price"></label>
+  <label>Year <input type="number" name="year"></label>
+  <label>Make <input type="text" name="make" placeholder="freightliner"></label>
+  <label>Model <input type="text" name="model" placeholder="cascadia"></label>
+  <label>Engine <input type="text" name="engine" placeholder="dd15"></label>
+  <label>Transmission <input type="text" name="transmission" placeholder="10-speed manual / I-Shift / etc."></label>
+  <label>Mileage <input type="number" name="mileage"></label>
+  <label>VIN <input type="text" name="vin" pattern="[A-HJ-NPR-Z0-9]{17}" maxlength="17"></label>
+  <label>City <input type="text" name="location_city"></label>
+  <label>State <input type="text" name="location_state" maxlength="2"></label>
+
+  <fieldset class="full">
+    <legend>Trailer-specific (if applicable)</legend>
+    <label>Length (ft) <input type="number" name="trailer_length_ft" value="53"></label>
+    <label>Door
+      <select name="trailer_door">
+        <option value="">—</option>
+        <option value="swing">swing</option>
+        <option value="rollup">rollup</option>
+      </select>
+    </label>
+    <label>Walls
+      <select name="trailer_walls">
+        <option value="">—</option>
+        <option value="composite">composite</option>
+        <option value="aluminum_sheet_post">aluminum_sheet_post</option>
+        <option value="aluminum_smooth">aluminum_smooth</option>
+      </select>
+    </label>
+    <label>Suspension
+      <select name="trailer_suspension">
+        <option value="">—</option>
+        <option value="air">air</option>
+        <option value="spring">spring</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <label class="full">Photos (one URL per line) <textarea name="photos" rows="3"></textarea></label>
+  <label class="full">Description (full listing text — helps the scorer pick up keywords like "in-frame", "APU", "deleted", etc.)
+    <textarea name="description" rows="8"></textarea>
+  </label>
+  <button type="submit">Save & score</button>
+</form>
+{% endblock %}

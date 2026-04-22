@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Deals{% endblock %}
+{% block content %}
+<h1>Deals</h1>
+
+<form method="get" action="/listings/" class="filterbar">
+  <label>Category
+    <select name="category">
+      <option value="">any</option>
+      <option value="truck_sleeper" {% if category == 'truck_sleeper' %}selected{% endif %}>truck_sleeper</option>
+      <option value="truck_daycab" {% if category == 'truck_daycab' %}selected{% endif %}>truck_daycab</option>
+      <option value="trailer_dryvan_53" {% if category == 'trailer_dryvan_53' %}selected{% endif %}>trailer_dryvan_53</option>
+      <option value="trailer_reefer" {% if category == 'trailer_reefer' %}selected{% endif %}>trailer_reefer</option>
+    </select>
+  </label>
+  <label>Source
+    <select name="source">
+      <option value="">any</option>
+      <option value="craigslist" {% if source == 'craigslist' %}selected{% endif %}>craigslist</option>
+      <option value="truckpaper" {% if source == 'truckpaper' %}selected{% endif %}>truckpaper</option>
+      <option value="commercial_truck_trader" {% if source == 'commercial_truck_trader' %}selected{% endif %}>commercial_truck_trader</option>
+      <option value="mylittlesalesman" {% if source == 'mylittlesalesman' %}selected{% endif %}>mylittlesalesman</option>
+      <option value="fb_marketplace" {% if source == 'fb_marketplace' %}selected{% endif %}>fb_marketplace</option>
+      <option value="ebay" {% if source == 'ebay' %}selected{% endif %}>ebay</option>
+      <option value="manual" {% if source == 'manual' %}selected{% endif %}>manual</option>
+    </select>
+  </label>
+  <label>Min score <input type="number" name="min_score" value="{{ min_score }}" min="0" max="100"></label>
+  <label>Starred <input type="checkbox" name="starred" value="1" {% if starred %}checked{% endif %}></label>
+  <button type="submit">Filter</button>
+</form>
+
+<div class="deal-grid">
+{% for l in rows %}
+  {% set latest = l.scores[0] if l.scores else None %}
+  <a class="deal-card" href="/listings/{{ l.id }}">
+    <div class="score score-{{ (latest.score // 15) if latest else 3 }}">
+      {{ latest.score if latest else "?" }}
+    </div>
+    <div class="title">
+      {% if l.user_starred %}★{% endif %}
+      {{ l.title }}
+    </div>
+    <div class="meta">
+      {{ l.year or "" }} {{ l.make or "" }} {{ l.model or "" }}
+      {% if l.engine %}· {{ l.engine }}{% endif %}
+      {% if l.mileage %}· {{ l.mileage | miles }} mi{% endif %}
+    </div>
+    <div class="price">{{ l.asking_price_cents | money }}</div>
+    <div class="muted src">
+      {{ l.source }} · {{ l.location_city or "" }} {{ l.location_state or "" }}
+    </div>
+  </a>
+{% else %}
+  <p class="muted">No listings yet. <a href="/listings/manual">Add one manually</a> or <a href="/listings/import">import a URL</a>.</p>
+{% endfor %}
+</div>
+{% endblock %}

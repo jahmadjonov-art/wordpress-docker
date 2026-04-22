@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ l.title }}{% endblock %}
+{% block content %}
+
+<div class="detail-head">
+  <div>
+    <h1>{{ l.title }}</h1>
+    <div class="muted">
+      {{ l.source }} · {{ l.location_city or "" }} {{ l.location_state or "" }}
+      {% if l.source_url and l.source_url.startswith('http') %}
+        · <a href="{{ l.source_url }}" target="_blank" rel="noopener">open original ↗</a>
+      {% endif %}
+    </div>
+  </div>
+  {% if latest %}
+  <div class="score-big score-{{ latest.score // 15 }}">
+    <div class="n">{{ latest.score }}</div>
+    <div class="sub">
+      {% if latest.score >= 85 %}Strong buy{% elif latest.score >= 70 %}Good deal{% elif latest.score >= 55 %}Fair{% elif latest.score >= 40 %}Priced high{% else %}Skip{% endif %}
+    </div>
+    <div class="sub muted">
+      confidence {{ (latest.confidence * 100) | int }}% · {{ latest.comp_count }} comps
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<section class="facts">
+  <dl>
+    <dt>Asking</dt><dd>{{ l.asking_price_cents | money }}</dd>
+    <dt>Median comp</dt><dd>{{ latest.median_comp_cents | money if latest else "—" }}</dd>
+    <dt>Year</dt><dd>{{ l.year or "—" }}</dd>
+    <dt>Make / Model</dt><dd>{{ l.make or "—" }} {{ l.model or "" }}</dd>
+    <dt>Engine</dt><dd>{{ l.engine or "—" }}</dd>
+    <dt>Transmission</dt><dd>{{ l.transmission or "—" }}</dd>
+    <dt>Mileage</dt><dd>{{ l.mileage | miles }} mi</dd>
+    <dt>VIN</dt><dd>{{ l.vin or "—" }}</dd>
+    {% if l.category.startswith('trailer') %}
+    <dt>Trailer length</dt><dd>{{ l.trailer_length_ft or "—" }} ft</dd>
+    <dt>Walls</dt><dd>{{ l.trailer_walls or "—" }}</dd>
+    <dt>Door</dt><dd>{{ l.trailer_door or "—" }}</dd>
+    <dt>Suspension</dt><dd>{{ l.trailer_suspension or "—" }}</dd>
+    {% endif %}
+  </dl>
+</section>
+
+{% if breakdown %}
+<section>
+  <h2>Score breakdown</h2>
+  <table class="breakdown">
+  {% for label, mod in breakdown %}
+    <tr>
+      <td>{{ label }}</td>
+      <td class="{{ 'pos' if mod > 0 else 'neg' if mod < 0 else '' }}">
+        {{ '+' if mod > 0 else '' }}{{ mod }}
+      </td>
+    </tr>
+  {% endfor %}
+  </table>
+</section>
+{% endif %}
+
+{% if photos %}
+<section>
+  <h2>Photos</h2>
+  <div class="photos">
+  {% for p in photos %}
+    <img src="{{ p }}" alt="" loading="lazy">
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if l.description %}
+<section>
+  <h2>Description</h2>
+  <pre class="desc">{{ l.description }}</pre>
+</section>
+{% endif %}
+
+<section class="actions">
+  <form method="post" action="/listings/{{ l.id }}/star">
+    <button>{{ "★ Unstar" if l.user_starred else "☆ Star" }}</button>
+  </form>
+  <form method="post" action="/listings/{{ l.id }}/rescore">
+    <button>Re-score</button>
+  </form>
+  <form method="post" action="/listings/{{ l.id }}/status">
+    <select name="status">
+      <option value="active" {% if l.status == 'active' %}selected{% endif %}>active</option>
+      <option value="sold" {% if l.status == 'sold' %}selected{% endif %}>sold</option>
+      <option value="stale" {% if l.status == 'stale' %}selected{% endif %}>stale</option>
+      <option value="flagged" {% if l.status == 'flagged' %}selected{% endif %}>flagged</option>
+    </select>
+    <button>Set status</button>
+  </form>
+</section>
+
+<section>
+  <h2>My notes</h2>
+  <form method="post" action="/listings/{{ l.id }}/notes">
+    <textarea name="user_notes" rows="4">{{ l.user_notes or "" }}</textarea>
+    <button>Save notes</button>
+  </form>
+</section>
+{% endblock %}

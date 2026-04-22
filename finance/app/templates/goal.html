@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Savings goal{% endblock %}
+{% block content %}
+<h1>Savings goal</h1>
+
+<p class="muted">
+  Total target: <strong>{{ goal.target_cents | money if goal else "—" }}</strong>
+  &middot; Current: <strong>{{ summary.balance_cents | money }}</strong>
+  &middot; Remaining: <strong>{{ summary.remaining_cents | money }}</strong>
+</p>
+
+<form method="post" action="/goal/">
+  <table class="buckets">
+    <tr><th>Bucket</th><th>Target ($)</th><th>Current ($)</th></tr>
+    {% for b in buckets %}
+    <tr>
+      <td><input type="text" name="bucket_name" value="{{ b.name }}" required></td>
+      <td><input type="number" step="1" name="bucket_target" value="{{ (b.target_cents / 100) | round(0) | int }}"></td>
+      <td><input type="number" step="1" name="bucket_current" value="{{ (b.current_cents / 100) | round(0) | int }}"></td>
+    </tr>
+    {% endfor %}
+    {# empty row for adding a bucket #}
+    <tr>
+      <td><input type="text" name="bucket_name" placeholder="new bucket"></td>
+      <td><input type="number" step="1" name="bucket_target"></td>
+      <td><input type="number" step="1" name="bucket_current"></td>
+    </tr>
+  </table>
+  <button type="submit">Save</button>
+</form>
+
+<details style="margin-top:2rem">
+  <summary>Suggested defaults (owner-operator launch budget)</summary>
+  <table class="buckets">
+    <tr><th>Bucket</th><th>Typical</th></tr>
+    {% for d in defaults %}
+    <tr><td>{{ d.name }}</td><td>${{ "{:,}".format(d.target) }}</td></tr>
+    {% endfor %}
+  </table>
+  <p class="muted">Ranges based on 2025-2026 owner-operator launch costs (truck, trailer, MC/DOT authority, insurance down payment, IFTA/IRP, equipment, 8-week operating reserve).</p>
+</details>
+{% endblock %}
