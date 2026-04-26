@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Scan Preview{% endblock %}
+{% block content %}
+<h1>Scan preview</h1>
+
+<p class="muted">Search URL: <a href="{{ search_url }}" target="_blank">{{ search_url }}</a></p>
+<p>Source detected: <strong>{{ source }}</strong></p>
+
+{% if error %}
+<p class="error">Error: {{ error }}</p>
+<p class="muted">Try a different URL, or use <a href="/listings/import">Import URL</a> to add a single listing.</p>
+{% endif %}
+
+{% if urls %}
+<p>Found <strong>{{ urls | length }}</strong> listing URLs on this page.</p>
+
+<form method="post" action="/admin/scan-url/run">
+  <input type="hidden" name="source" value="{{ source }}">
+  <input type="hidden" name="category" value="{{ category }}">
+  <textarea name="urls" style="display:none">{{ urls | join('\n') }}</textarea>
+  <button type="submit" style="font-size:1.1em">
+    Scrape &amp; score all {{ urls | length }} listings in background
+  </button>
+</form>
+
+<table class="ledger" style="margin-top:1.5rem">
+  <tr><th>#</th><th>Listing URL</th></tr>
+  {% for u in urls %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td><a href="{{ u }}" target="_blank">{{ u }}</a></td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% elif not error %}
+<p class="muted">No listing URLs were found on that page. The site may require JavaScript or block bots. Try a different URL.</p>
+{% endif %}
+
+<p style="margin-top:2rem"><a href="/admin/">&larr; Back to Admin</a></p>
+{% endblock %}

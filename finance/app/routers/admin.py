@@ -9,7 +9,7 @@ from ..templating import templates
 from ..scoring.market import compute_cohort_stats
 from ..scoring.engine import rescore_all
 from ..scrapers import craigslist as cl
-from ..scrapers._base import scan_url
+from ..scrapers._base import scan_url, preview_search_url, scrape_url_list
 from .. import models, config
 
 router = APIRouter()
@@ -47,15 +47,34 @@ def run_scrape(bg: BackgroundTasks):
     return RedirectResponse("/admin/", status_code=303)
 
 
-@router.post("/scan-url")
-async def scan_url_route(request: Request, bg: BackgroundTasks):
+@router.post("/scan-url", response_class=HTMLResponse)
+async def scan_url_preview(request: Request):
     form = await request.form()
     url = (form.get("url") or "").strip()
     category = form.get("category") or "other"
-    if url:
+    if not url:
+        return RedirectResponse("/admin/", status_code=303)
+    result = preview_search_url(url)
+    return templates.TemplateResponse("admin_scan.html", {
+        "request": request,
+        "search_url": url,
+        "category": category,
+        "source": result["source"],
+        "urls": result["urls"],
+        "error": result.get("error"),
+    })
+
+
+@router.post("/scan-url/run")
+async def scan_url_run(request: Request, bg: BackgroundTasks):
+    form = await request.form()
+    source = form.get("source") or "scan"
+    category = form.get("category") or "other"
+    urls = [u.strip() for u in (form.get("urls") or "").splitlines() if u.strip()]
+    if urls:
         def _run():
             with SessionLocal() as db:
-                scan_url(url, category, db)
+                scrape_url_list(source, urls, category, db)
         bg.add_task(_run)
     return RedirectResponse("/admin/", status_code=303)
 

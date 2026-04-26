@@ -114,32 +114,89 @@ _KNOWN = [
 ]
 
 
-def scan_url(search_url: str, category: str, db: Session) -> dict:
-    """Scrape a user-supplied search results URL, auto-detect source."""
+def _detect_source(search_url: str):
+    """Return (source_name, is_listing_fn) for a given search URL."""
     parsed = urlparse(search_url)
     domain = parsed.netloc.lower()
 
-    source = "scan"
-    is_listing = None
-
     for pattern, src in _KNOWN:
-        # Check if any URL from this domain would match the pattern
-        # by testing the pattern against the domain keyword
-        domain_key = src.replace("_", "").replace(" ", "")
+        domain_key = src.replace("_", "")
         if any(k in domain for k in [src.split("_")[0], domain_key]):
-            source = src
-            is_listing = lambda u, p=pattern: bool(p.search(u))  # noqa: E731
-            break
+            return src, lambda u, p=pattern: bool(p.search(u))  # noqa: E731
 
-    if is_listing is None:
-        # Generic heuristic: same domain, deeper path, contains a digit (listing ID)
-        base_depth = len([p for p in parsed.path.split("/") if p])
+    # Generic heuristic: same domain, deeper path, contains a digit
+    base_depth = len([p for p in parsed.path.split("/") if p])
 
-        def is_listing(u: str) -> bool:
-            p = urlparse(u)
-            if p.netloc and p.netloc != parsed.netloc:
-                return False
-            parts = [x for x in p.path.split("/") if x]
-            return len(parts) > base_depth and any(c.isdigit() for c in p.path)
+    def _generic(u: str) -> bool:
+        p = urlparse(u)
+        if p.netloc and p.netloc != parsed.netloc:
+            return False
+        parts = [x for x in p.path.split("/") if x]
+        return len(parts) > base_depth and any(c.isdigit() for c in p.path)
 
+    return "scan", _generic
+
+
+def preview_search_url(search_url: str) -> dict:
+    """Fetch a search page and return found listing URLs without scraping them."""
+    source, is_listing = _detect_source(search_url)
+    try:
+        with httpx.Client(follow_redirects=True, timeout=15.0, headers=HEADERS) as client:
+            resp = client.get(search_url)
+            if resp.status_code != 200:
+                return {"source": source, "urls": [], "error": f"HTTP {resp.status_code}"}
+            urls = sorted(_listing_urls_from_html(resp.text, search_url, is_listing))
+            return {"source": source, "urls": urls, "error": None}
+    except Exception as e:
+        return {"source": source, "urls": [], "error": f"{type(e).__name__}: {e}"}
+
+
+def scrape_url_list(source: str, urls: list[str], category: str, db: Session) -> dict:
+    """Scrape a pre-discovered list of listing URLs and score them."""
+    run_row = models.ScrapeRun(source=source, started_at=datetime.utcnow())
+    db.add(run_row)
+    db.commit()
+    db.refresh(run_row)
+
+    new = updated = 0
+    errors: list[str] = []
+
+    for url in urls:
+        existing = db.execute(
+            select(models.Listing).where(models.Listing.source_url == url)
+        ).scalar_one_or_none()
+        if existing:
+            existing.last_seen = datetime.utcnow()
+            db.commit()
+            updated += 1
+            continue
+        try:
+            data = fetch_and_parse(url)
+            if data.get("category") == "other":
+                data["category"] = category
+            data["source"] = source
+            data["fetch_method"] = "scrape"
+            safe = {k: v for k, v in data.items() if k in _LISTING_FIELDS}
+            listing = models.Listing(**safe)
+            db.add(listing)
+            db.commit()
+            db.refresh(listing)
+            score_and_save(db, listing)
+            new += 1
+        except Exception as e:
+            errors.append(f"{url}: {type(e).__name__}: {e}")
+        time.sleep(random.uniform(1.5, 3.0))
+
+    run_row.finished_at = datetime.utcnow()
+    run_row.listings_new = new
+    run_row.listings_updated = updated
+    run_row.errors_json = json.dumps(errors[:50]) if errors else None
+    run_row.status = "ok" if not errors else ("partial" if new or updated else "fail")
+    db.commit()
+    return {"new": new, "updated": updated, "errors": len(errors)}
+
+
+def scan_url(search_url: str, category: str, db: Session) -> dict:
+    """Convenience wrapper: detect source and scrape a search URL."""
+    source, is_listing = _detect_source(search_url)
     return scrape_search_pages(source, [(search_url, category)], is_listing, db, pages=1)
