@@ -9,6 +9,7 @@ from ..templating import templates
 from ..scoring.market import compute_cohort_stats
 from ..scoring.engine import rescore_all
 from ..scrapers import craigslist as cl
+from ..scrapers._base import scan_url
 from .. import models, config
 
 router = APIRouter()
@@ -43,6 +44,19 @@ def run_scrape(bg: BackgroundTasks):
         with SessionLocal() as db:
             cl.run(db)
     bg.add_task(_run)
+    return RedirectResponse("/admin/", status_code=303)
+
+
+@router.post("/scan-url")
+async def scan_url_route(request: Request, bg: BackgroundTasks):
+    form = await request.form()
+    url = (form.get("url") or "").strip()
+    category = form.get("category") or "other"
+    if url:
+        def _run():
+            with SessionLocal() as db:
+                scan_url(url, category, db)
+        bg.add_task(_run)
     return RedirectResponse("/admin/", status_code=303)
 
 

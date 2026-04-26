@@ -4,7 +4,7 @@ import re
 import time
 import random
 from datetime import datetime
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -103,3 +103,43 @@ def scrape_search_pages(
     run_row.status = "ok" if not errors else ("partial" if new or updated else "fail")
     db.commit()
     return {"new": new, "updated": updated, "errors": len(errors)}
+
+
+# Known site patterns — (regex, source_name)
+_KNOWN = [
+    (re.compile(r'truckpaper\.com/listings/[^/]+/for-sale/list/\d+', re.I), "truckpaper"),
+    (re.compile(r'commercialtrucktrader\.com/listing/[^/]+/\d+', re.I), "commercial_truck_trader"),
+    (re.compile(r'mylittlesalesman\.com/item/\d+', re.I), "mylittlesalesman"),
+    (re.compile(r'craigslist\.org/.+/\d+\.html', re.I), "craigslist"),
+]
+
+
+def scan_url(search_url: str, category: str, db: Session) -> dict:
+    """Scrape a user-supplied search results URL, auto-detect source."""
+    parsed = urlparse(search_url)
+    domain = parsed.netloc.lower()
+
+    source = "scan"
+    is_listing = None
+
+    for pattern, src in _KNOWN:
+        # Check if any URL from this domain would match the pattern
+        # by testing the pattern against the domain keyword
+        domain_key = src.replace("_", "").replace(" ", "")
+        if any(k in domain for k in [src.split("_")[0], domain_key]):
+            source = src
+            is_listing = lambda u, p=pattern: bool(p.search(u))  # noqa: E731
+            break
+
+    if is_listing is None:
+        # Generic heuristic: same domain, deeper path, contains a digit (listing ID)
+        base_depth = len([p for p in parsed.path.split("/") if p])
+
+        def is_listing(u: str) -> bool:
+            p = urlparse(u)
+            if p.netloc and p.netloc != parsed.netloc:
+                return False
+            parts = [x for x in p.path.split("/") if x]
+            return len(parts) > base_depth and any(c.isdigit() for c in p.path)
+
+    return scrape_search_pages(source, [(search_url, category)], is_listing, db, pages=1)
