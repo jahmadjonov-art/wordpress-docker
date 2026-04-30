@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Chess Teaching Bot{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Hi, {{ player.name }}.</h1>
+  <p class="rating">Your rating: <strong>{{ player.elo }}</strong>
+    &middot; games played: {{ player.games_played }}</p>
+  <form method="post" action="/game/new">
+    <button type="submit" class="primary">New game</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Recent games</h2>
+  {% if games %}
+  <table class="games">
+    <thead>
+      <tr><th>#</th><th>Bot Elo</th><th>Result</th><th>Started</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for g in games %}
+      <tr>
+        <td>{{ g.id }}</td>
+        <td>{{ g.bot_elo }}</td>
+        <td>
+          {% if g.result == "1-0" and g.player_color == "w" %}<span class="win">Win</span>
+          {% elif g.result == "0-1" and g.player_color == "b" %}<span class="win">Win</span>
+          {% elif g.result == "1/2-1/2" %}<span class="draw">Draw</span>
+          {% elif g.result %}<span class="loss">Loss</span>
+          {% else %}<span class="ongoing">In progress</span>
+          {% endif %}
+        </td>
+        <td>{{ g.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td><a href="/game/{{ g.id }}">Open</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No games yet. Start one above.</p>
+  {% endif %}
+</section>
+{% endblock %}

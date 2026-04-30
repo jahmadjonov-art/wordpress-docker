@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Game #{{ game.id }} &middot; Chess Teaching Bot{% endblock %}
+{% block head %}
+<link rel="stylesheet"
+      href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+{% endblock %}
+{% block content %}
+<section class="game-layout">
+  <div class="board-side">
+    <div id="board" style="width: 480px"></div>
+    <div class="game-controls">
+      <span>Game #{{ game.id }} &middot; Bot Elo {{ game.bot_elo }} &middot; you: {{ player.elo }}</span>
+      <button id="resign" {% if game_over %}disabled{% endif %}>Resign</button>
+      <a href="/" class="btn">Home</a>
+    </div>
+    <div id="status" class="status">
+      {% if game_over %}Game over: {{ game.result }}{% else %}Your move.{% endif %}
+    </div>
+  </div>
+
+  <aside class="commentary-side">
+    <h3>Commentary</h3>
+    <ol id="comments" class="comments">
+      {% for m in moves %}
+      <li class="comment {{ m.tier or 'bot' }}">
+        <span class="ply">{{ m.ply }}.</span>
+        <span class="san">{{ m.san }}</span>
+        {% if m.commentary %}<span class="text">{{ m.commentary }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </aside>
+</section>
+
+<dialog id="promo-dialog">
+  <form method="dialog">
+    <p>Promote pawn to:</p>
+    <button value="q">Queen</button>
+    <button value="r">Rook</button>
+    <button value="b">Bishop</button>
+    <button value="n">Knight</button>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+<script>
+  window.GAME = {
+    id: {{ game.id }},
+    fen: "{{ game.current_fen }}",
+    playerColor: "{{ game.player_color }}",
+    over: {{ "true" if game_over else "false" }},
+  };
+</script>
+<script src="/static/app.js"></script>
+{% endblock %}
