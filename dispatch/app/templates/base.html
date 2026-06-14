@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Freight Dispatcher{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topnav">
+  <div class="brand"><a href="/">LoadScorer</a></div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/loads/">Loads</a>
+    <a href="/loads/new">+ Score a load</a>
+    <a href="/settings/">Settings</a>
+    <a href="/export/loads.csv">Export</a>
+  </nav>
+</header>
+<main>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ l.origin_city }} → {{ l.dest_city }}{% endblock %}
+{% block content %}
+
+<div class="detail-head">
+  <div>
+    <h1>{{ l.origin_city }}, {{ l.origin_state }} → {{ l.dest_city }}, {{ l.dest_state }}</h1>
+    <div class="muted">
+      {{ l.equipment }}
+      {% if l.broker_name %}· {{ l.broker_name }}{% endif %}
+      {% if l.broker_mc %}· MC {{ l.broker_mc }}{% endif %}
+      · miles via {{ l.miles_source }}
+    </div>
+  </div>
+  {% if latest %}
+  <div class="score-big score-{{ latest.score // 15 }}">
+    <div class="n">{{ latest.score }}</div>
+    <div class="sub">
+      {% if latest.score >= 85 %}Great rate{% elif latest.score >= 70 %}Good{% elif latest.score >= 55 %}Fair{% elif latest.score >= 40 %}Weak{% else %}Skip{% endif %}
+    </div>
+    <div class="sub muted">conf {{ (latest.confidence * 100) | int }}% · {{ latest.lane_comp_count }} comps</div>
+  </div>
+  {% endif %}
+</div>
+
+<section class="facts">
+  <dl>
+    <dt>Offered rate</dt><dd>{{ l.rate_total_cents | money }}</dd>
+    <dt>Rate / mile</dt><dd>{{ l.rate_per_mile_cents | rpm }}</dd>
+    <dt>Lane median / mile</dt><dd>{{ latest.median_rpm_cents | rpm if latest else "—" }}</dd>
+    <dt>Loaded / deadhead</dt><dd>{{ l.loaded_miles | miles }} mi / {{ l.deadhead_miles | miles }} mi</dd>
+    <dt>Est. cost to run</dt><dd>{{ latest.est_cost_cents | money if latest else "—" }}</dd>
+    <dt>Est. profit</dt>
+    <dd class="{{ 'pos' if latest and latest.est_profit_cents and latest.est_profit_cents > 0 else 'neg' if latest and latest.est_profit_cents is not none and latest.est_profit_cents < 0 else '' }}">
+      {{ latest.est_profit_cents | money if latest else "—" }}
+    </dd>
+    <dt class="spark">Push for (target rate)</dt>
+    <dd class="spark"><strong>{{ latest.suggested_target_rate_cents | money if latest else "—" }}</strong></dd>
+    {% if l.weight_lbs %}<dt>Weight</dt><dd>{{ l.weight_lbs | miles }} lbs</dd>{% endif %}
+    {% if l.commodity %}<dt>Commodity</dt><dd>{{ l.commodity }}</dd>{% endif %}
+    {% if l.pickup_date %}<dt>Pickup</dt><dd>{{ l.pickup_date }}</dd>{% endif %}
+  </dl>
+</section>
+
+{% if breakdown %}
+<section>
+  <h2>Score breakdown</h2>
+  <table class="breakdown">
+  {% for label, mod in breakdown %}
+    <tr>
+      <td>{{ label }}</td>
+      <td class="{{ 'pos' if mod > 0 else 'neg' if mod < 0 else '' }}">{{ '+' if mod > 0 else '' }}{{ mod }}</td>
+    </tr>
+  {% endfor %}
+  </table>
+</section>
+{% endif %}
+
+<section>
+  <h2>Broker check (FMCSA)</h2>
+  {% if not fmcsa_configured %}
+    <p class="muted">Add <code>FMCSA_WEBKEY</code> to your .env to verify broker authority automatically (free key).</p>
+  {% elif broker %}
+    <dl class="facts">
+      <dt>Legal name</dt><dd>{{ broker.legal_name or "—" }}</dd>
+      <dt>Authorized to operate</dt>
+      <dd class="{{ 'pos' if broker.allowed_to_operate == 'Y' else 'neg' }}">{{ broker.allowed_to_operate or "?" }}</dd>
+      <dt>Safety rating</dt><dd>{{ broker.safety_rating or "—" }}</dd>
+      <dt>Checked</dt><dd>{{ broker.last_checked.strftime("%Y-%m-%d %H:%M") }}</dd>
+    </dl>
+  {% else %}
+    <p class="muted">No broker MC number on this load, or FMCSA had no record.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Negotiation letter</h2>
+  {% if not ai_configured %}
+    <p class="muted">Add your <code>ANTHROPIC_API_KEY</code> to .env to have Claude draft a broker
+      negotiation email using this load's numbers and the lane benchmark.</p>
+  {% else %}
+    <form method="post" action="/loads/{{ l.id }}/letter">
+      <button>{{ "Regenerate letter" if l.letter_text else "Draft negotiation letter" }}</button>
+    </form>
+  {% endif %}
+  {% if l.letter_text %}
+    <pre class="desc" style="margin-top:0.75rem;">{{ l.letter_text }}</pre>
+    {% if l.letter_generated_at %}<div class="muted">generated {{ l.letter_generated_at.strftime("%Y-%m-%d %H:%M") }} UTC</div>{% endif %}
+  {% endif %}
+</section>
+
+{% if l.notes %}
+<section>
+  <h2>Notes</h2>
+  <pre class="desc">{{ l.notes }}</pre>
+</section>
+{% endif %}
+
+<section class="actions">
+  <form method="post" action="/loads/{{ l.id }}/star"><button>{{ "★ Unstar" if l.user_starred else "☆ Star" }}</button></form>
+  <form method="post" action="/loads/{{ l.id }}/rescore"><button>Re-route & re-score</button></form>
+  <form method="post" action="/loads/{{ l.id }}/status">
+    <select name="status">
+      <option value="active" {% if l.status == 'active' %}selected{% endif %}>active</option>
+      <option value="booked" {% if l.status == 'booked' %}selected{% endif %}>booked</option>
+      <option value="passed" {% if l.status == 'passed' %}selected{% endif %}>passed</option>
+    </select>
+    <button>Set status</button>
+  </form>
+</section>
+{% endblock %}

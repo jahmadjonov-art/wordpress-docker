@@ -37,5 +37,23 @@ TARGET_OPERATING_RESERVE=18000
 TARGET_CONTINGENCY=10500
 ENV
 
+# Write dispatch .env (reuses the same login; all integration keys optional)
+cat > /app/dispatch/.env <<ENV
+DISPATCH_USER=${finance_user}
+DISPATCH_PASS=${finance_pass}
+DATABASE_URL=sqlite:////data/dispatch.db
+ORS_API_KEY=
+OSRM_URL=
+EIA_API_KEY=
+FMCSA_WEBKEY=
+ANTHROPIC_API_KEY=
+DEFAULT_DIESEL_CPG=420
+DEFAULT_MPG=6.5
+FIXED_MONTHLY_CENTS=900000
+AVG_MONTHLY_MILES=10000
+MAINT_CPM_CENTS=18
+TARGET_MARGIN_PCT=30
+ENV
+
 # Start the app
 docker compose up -d

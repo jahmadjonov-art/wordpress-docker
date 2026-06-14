@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Loads{% endblock %}
+{% block content %}
+<h1>Loads</h1>
+
+<form method="get" action="/loads/" class="filterbar">
+  <label>Equipment
+    <select name="equipment">
+      <option value="">any</option>
+      {% for e in equipment_types %}
+      <option value="{{ e }}" {% if equipment == e %}selected{% endif %}>{{ e }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Min score <input type="number" name="min_score" value="{{ min_score }}" min="0" max="100"></label>
+  <label>Starred <input type="checkbox" name="starred" value="1" {% if starred %}checked{% endif %}></label>
+  <button type="submit">Filter</button>
+</form>
+
+<div class="deal-grid">
+{% for l in rows %}
+  {% set sc = l.scores[0] if l.scores else None %}
+  <a class="deal-card" href="/loads/{{ l.id }}">
+    <div class="score score-{{ (sc.score // 15) if sc else 3 }}">{{ sc.score if sc else "?" }}</div>
+    <div class="title">
+      {% if l.user_starred %}★{% endif %}
+      {{ l.origin_city }}, {{ l.origin_state }} → {{ l.dest_city }}, {{ l.dest_state }}
+    </div>
+    <div class="meta">
+      {{ l.equipment }}{% if l.loaded_miles %} · {{ l.loaded_miles | miles }} mi{% endif %}
+      {% if l.deadhead_miles %} · {{ l.deadhead_miles | miles }} dh{% endif %}
+      {% if l.rate_per_mile_cents %} · {{ l.rate_per_mile_cents | rpm }}/mi{% endif %}
+    </div>
+    <div class="price">{{ l.rate_total_cents | money }}</div>
+    <div class="muted src">
+      {{ l.broker_name or "" }}
+      {% if sc and sc.suggested_target_rate_cents %}· target {{ sc.suggested_target_rate_cents | money }}{% endif %}
+    </div>
+  </a>
+{% else %}
+  <p class="muted">No loads yet. <a href="/loads/new">Score a load</a>.</p>
+{% endfor %}
+</div>
+{% endblock %}
