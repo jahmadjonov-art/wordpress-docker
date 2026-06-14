@@ -45,6 +45,9 @@ def score_and_save(db: Session, load: models.Load) -> models.LoadScore:
         est_cost_cents=result.est_cost_cents,
         est_profit_cents=result.est_profit_cents,
         suggested_target_rate_cents=result.suggested_target_rate_cents,
+        net_revenue_cents=result.net_revenue_cents,
+        deadhead_adj_rpm_cents=result.deadhead_adj_rpm_cents,
+        profit_per_hour_cents=result.profit_per_hour_cents,
         breakdown_json=json.dumps(result.breakdown),
     )
     db.add(row)

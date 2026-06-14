@@ -34,6 +34,9 @@ class Load(Base):
     # broker
     broker_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     broker_mc: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # accessorials / cash terms (fold into true net profit)
+    lumper_fee_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    payment_terms: Mapped[str | None] = mapped_column(String(16), nullable=True)  # quickpay|net15|net30|...
     # freeform
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     # negotiation letter (cached after generation)
@@ -67,6 +70,10 @@ class LoadScore(Base):
     est_cost_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     est_profit_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     suggested_target_rate_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # true-net + hours economics (display)
+    net_revenue_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    deadhead_adj_rpm_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    profit_per_hour_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     breakdown_json: Mapped[str] = mapped_column(Text, default="[]")
 
     load: Mapped["Load"] = relationship(back_populates="scores")
@@ -97,6 +104,11 @@ class Broker(Base):
     safety_rating: Mapped[str | None] = mapped_column(String(32), nullable=True)
     raw_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_checked: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # reliability that learns from logged outcomes (Elo-style, seeded at 1500)
+    reliability_elo: Mapped[int] = mapped_column(Integer, default=1500)
+    outcomes_count: Mapped[int] = mapped_column(Integer, default=0)
+    # rolling average of broker margin % the user has personally uncovered (49 CFR 371.3)
+    avg_margin_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class FuelPrice(Base):
@@ -117,7 +129,28 @@ class Settings(Base):
     avg_monthly_miles: Mapped[int] = mapped_column(Integer)
     maint_cpm_cents: Mapped[int] = mapped_column(Integer)
     target_margin_pct: Mapped[int] = mapped_column(Integer)
+    # true-net + hours-of-service economics
+    factoring_pct: Mapped[float] = mapped_column(Float, default=3.0)
+    avg_speed_mph: Mapped[float] = mapped_column(Float, default=50.0)
+    detention_free_hours: Mapped[float] = mapped_column(Float, default=2.0)
+    detention_rate_cents: Mapped[int] = mapped_column(Integer, default=7500)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class LoadOutcome(Base):
+    """A logged result for a completed load — drives broker reliability Elo."""
+    __tablename__ = "load_outcomes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    load_id: Mapped[int | None] = mapped_column(ForeignKey("loads.id", ondelete="SET NULL"), nullable=True)
+    broker_mc: Mapped[str | None] = mapped_column(String(16), index=True, nullable=True)
+    paid_timing: Mapped[str] = mapped_column(String(16))   # on_time|late|short|unpaid
+    detention_honored: Mapped[str | None] = mapped_column(String(8), nullable=True)  # yes|no|na
+    rate_accurate: Mapped[str | None] = mapped_column(String(8), nullable=True)      # yes|no|na
+    tonu: Mapped[bool] = mapped_column(Boolean, default=False)
+    margin_pct: Mapped[float | None] = mapped_column(Float, nullable=True)  # broker margin uncovered via 371.3
+    elo_delta: Mapped[int] = mapped_column(Integer, default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class JobRun(Base):

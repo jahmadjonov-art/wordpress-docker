@@ -29,6 +29,27 @@ median/p25/p75 of rate-per-mile within each `equipment | origin-region |
 dest-region` cohort, widening when an exact lane has too few samples. The
 scoring tables live in `app/scoring/modifiers.py` — tune them freely.
 
+**Cold start:** until a lane has enough of your own loads, the score falls back
+to a seasonally-adjusted national reference rate (`app/scoring/reference.py` +
+`app/seasonality.py`), so it's useful on load #1.
+
+### Beyond a flat rate-per-mile
+
+- **True-net economics** (`economics.py`): profit is computed on *net* revenue —
+  rate minus lumper/accessorials minus financing cost (factoring vs quick-pay vs
+  net terms). It also reports **deadhead-adjusted RPM** (rate over loaded +
+  deadhead) and **profit per on-duty hour** (hours-of-service aware, flags
+  multi-day loads).
+- **Broker reliability score** (`app/scoring/broker_rating.py`): an Elo-style
+  rating (seeded 1500) that drifts on outcomes you log after a load runs — paid
+  on time / short / detention honored / TONU. It feeds the load score, replacing
+  a blunt authority-only check with something that learns from your experience.
+- **Produce-season awareness**: reefer reference rates lift during produce season
+  and by producing region.
+- **Broker margin ledger (49 CFR 371.3)**: optionally log the broker margin you
+  uncover via your own records request; it averages per broker. There is no
+  public margin feed — this is the realistic, bottom-up way to benchmark it.
+
 ## Free data sources (all optional — the app runs with zero keys)
 
 | Capability | Source | Without a key |

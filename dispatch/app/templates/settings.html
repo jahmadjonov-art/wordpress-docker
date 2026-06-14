@@ -12,6 +12,10 @@
     <label>Avg monthly miles <input type="number" step="1" name="avg_monthly_miles" value="{{ s.avg_monthly_miles }}"></label>
     <label>Maintenance ¢/mile <input type="number" step="1" name="maint_cpm" value="{{ s.maint_cpm_cents }}"></label>
     <label>Target margin (%) <input type="number" step="1" name="target_margin_pct" value="{{ s.target_margin_pct }}"></label>
+    <label>Factoring fee (%) <input type="number" step="0.1" name="factoring_pct" value="{{ s.factoring_pct }}"></label>
+    <label>Avg truck speed (mph) <input type="number" step="1" name="avg_speed_mph" value="{{ s.avg_speed_mph }}"></label>
+    <label>Detention free hrs <input type="number" step="0.5" name="detention_free_hours" value="{{ s.detention_free_hours }}"></label>
+    <label>Detention $/hr <input type="number" step="1" name="detention_rate" value="{{ (s.detention_rate_cents / 100) | round(0, 'floor') }}"></label>
     <button type="submit">Save & re-score all</button>
   </form>
 </section>

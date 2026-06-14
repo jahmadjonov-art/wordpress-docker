@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..templating import templates
 from ..scoring.engine import score_and_save
+from ..scoring import broker_rating
 from ..integrations import routing, fmcsa
 from ..ai import negotiate
 from .. import models, config
@@ -100,6 +101,7 @@ def load_detail(load_id: int, request: Request, db: Session = Depends(get_db)):
             "latest": latest,
             "breakdown": breakdown,
             "broker": broker,
+            "broker_label": broker_rating.label(broker.reliability_elo) if broker else None,
             "fmcsa_configured": fmcsa.configured(),
             "ai_configured": negotiate.configured(),
         },
@@ -152,7 +154,57 @@ def make_letter(load_id: int, db: Session = Depends(get_db)):
     return RedirectResponse(f"/loads/{load_id}", status_code=303)
 
 
+@router.post("/{load_id}/outcome")
+async def log_outcome(load_id: int, request: Request, db: Session = Depends(get_db)):
+    """Record how a completed load went; updates the broker's reliability Elo."""
+    load = db.get(models.Load, load_id)
+    if not load:
+        return RedirectResponse("/loads/", status_code=303)
+    form = await request.form()
+
+    paid_timing = form.get("paid_timing") or "on_time"
+    detention = form.get("detention_honored") or "na"
+    rate_accurate = form.get("rate_accurate") or "na"
+    tonu = form.get("tonu") == "1"
+    margin_pct = _num(form, "margin_pct", float)
+
+    delta = broker_rating.outcome_delta(paid_timing, detention, rate_accurate, tonu)
+
+    db.add(models.LoadOutcome(
+        load_id=load.id, broker_mc=fmcsa._clean_mc(load.broker_mc or "") or None,
+        paid_timing=paid_timing, detention_honored=detention, rate_accurate=rate_accurate,
+        tonu=tonu, margin_pct=margin_pct, elo_delta=delta,
+        notes=(form.get("outcome_notes") or None),
+    ))
+
+    if load.broker_mc:
+        broker = _get_or_create_broker(db, load.broker_mc, load.broker_name)
+        broker.reliability_elo = broker_rating.apply(broker.reliability_elo, delta)
+        broker.outcomes_count = (broker.outcomes_count or 0) + 1
+        if margin_pct is not None:
+            n = broker.outcomes_count
+            prev = broker.avg_margin_pct if broker.avg_margin_pct is not None else margin_pct
+            broker.avg_margin_pct = (prev * (n - 1) + margin_pct) / n
+    db.commit()
+
+    # re-score so the new reliability flows into the load score
+    score_and_save(db, load)
+    return RedirectResponse(f"/loads/{load_id}", status_code=303)
+
+
 # ---------------- helpers ----------------
+
+def _get_or_create_broker(db, mc_number: str, name: str | None) -> models.Broker:
+    mc = fmcsa._clean_mc(mc_number)
+    broker = db.execute(
+        select(models.Broker).where(models.Broker.mc_number == mc)
+    ).scalar_one_or_none()
+    if broker is None:
+        broker = models.Broker(mc_number=mc, legal_name=name)
+        db.add(broker)
+        db.flush()
+    return broker
+
 
 def _num(form, key, cast=int):
     v = form.get(key)
@@ -192,6 +244,8 @@ def _load_from_form(form) -> models.Load:
         rate_total_cents=int(round(rate * 100)) if rate is not None else None,
         broker_name=(form.get("broker_name") or None),
         broker_mc=(form.get("broker_mc") or None),
+        lumper_fee_cents=(lambda v: int(round(v * 100)) if v is not None else None)(_num(form, "lumper_fee", float)),
+        payment_terms=(form.get("payment_terms") or None),
         notes=(form.get("notes") or None),
     )
 

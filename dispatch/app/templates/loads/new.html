@@ -27,6 +27,16 @@ loaded miles blank to let routing fill it in.</p>
 
   <label>Broker name <input type="text" name="broker_name"></label>
   <label>Broker MC # <input type="text" name="broker_mc" placeholder="123456"></label>
+  <label>Lumper / accessorial ($) <input type="number" step="1" name="lumper_fee" placeholder="0"></label>
+  <label>Payment terms
+    <select name="payment_terms">
+      <option value="">— (assume factored)</option>
+      <option value="quickpay">quick-pay</option>
+      <option value="net7">net 7 / ACH</option>
+      <option value="net15">net 15</option>
+      <option value="net30">net 30</option>
+    </select>
+  </label>
 
   <label class="full">Notes (paste the load description — risk keywords like "no detention", "lumper", "tarp" affect the score)
     <textarea name="notes" rows="5"></textarea>

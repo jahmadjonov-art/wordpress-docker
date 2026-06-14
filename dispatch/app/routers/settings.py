@@ -36,6 +36,10 @@ def save_settings(
     avg_monthly_miles: int = Form(...),
     maint_cpm: int = Form(...),
     target_margin_pct: int = Form(...),
+    factoring_pct: float = Form(3.0),
+    avg_speed_mph: float = Form(50.0),
+    detention_free_hours: float = Form(2.0),
+    detention_rate: float = Form(75.0),
     db: Session = Depends(get_db),
 ):
     s = db.get(models.Settings, 1)
@@ -44,6 +48,10 @@ def save_settings(
     s.avg_monthly_miles = avg_monthly_miles
     s.maint_cpm_cents = maint_cpm
     s.target_margin_pct = target_margin_pct
+    s.factoring_pct = factoring_pct
+    s.avg_speed_mph = avg_speed_mph
+    s.detention_free_hours = detention_free_hours
+    s.detention_rate_cents = int(round(detention_rate * 100))
     db.commit()
     rescore_all(db)  # economics changed — refresh every load's numbers
     return RedirectResponse("/settings/", status_code=303)

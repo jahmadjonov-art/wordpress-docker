@@ -17,9 +17,11 @@ def db():
     init_db()
     session = SessionLocal()
     # clean slate per test
+    session.query(models.LoadOutcome).delete()
     session.query(models.LoadScore).delete()
     session.query(models.Load).delete()
     session.query(models.LaneStat).delete()
+    session.query(models.Broker).delete()
     session.commit()
     try:
         yield session
