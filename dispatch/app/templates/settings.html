@@ -30,10 +30,16 @@
       {% if eia_configured %}(EIA){% else %}(default — add <code>EIA_API_KEY</code> for live){% endif %}
     </dd>
     <dt>Broker check</dt><dd>{% if fmcsa_configured %}FMCSA enabled{% else %}off — add <code>FMCSA_WEBKEY</code>{% endif %}</dd>
+    <dt>Produce rate seed</dt><dd>{% if usda_configured %}USDA AMS enabled{% else %}off — built-in reference (add <code>USDA_API_KEY</code> + report slug){% endif %}</dd>
     <dt>AI negotiation</dt><dd>{% if ai_configured %}enabled{% else %}dormant — add <code>ANTHROPIC_API_KEY</code>{% endif %}</dd>
   </dl>
+  <div class="actions">
   {% if eia_configured %}
   <form method="post" action="/settings/refresh-fuel"><button>Refresh diesel price now</button></form>
   {% endif %}
+  {% if usda_configured %}
+  <form method="post" action="/settings/refresh-produce"><button>Refresh produce rates now</button></form>
+  {% endif %}
+  </div>
 </section>
 {% endblock %}

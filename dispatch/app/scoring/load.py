@@ -58,10 +58,14 @@ def score_load(
         confidence = min(1.0, comp_count / 15.0)
         bench_label = f"Rate vs lane median of {comp_count} loads"
     else:
-        ref, season_note = reference.reference_rpm_cents(load.equipment, load.pickup_date, load.origin_state)
+        seed = reference.seed_base_cents(db, load.equipment, load.origin_state)
+        ref, season_note = reference.reference_rpm_cents(
+            load.equipment, load.pickup_date, load.origin_state, base_override=seed
+        )
         benchmark = ref
         confidence = 0.25
-        bench_label = f"Rate vs {load.equipment} reference (thin lane history)"
+        src = "USDA/seed" if seed else "national"
+        bench_label = f"Rate vs {load.equipment} {src} reference (thin lane history)"
         if season_note:
             breakdown.append((season_note, 0))
 

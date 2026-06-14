@@ -62,6 +62,30 @@
 {% endif %}
 
 <section>
+  <h2>Backhaul / round trip</h2>
+  {% if backhauls %}
+    {% if best_round_trip %}
+    <p>Best pairing makes a round trip of <strong>{{ best_round_trip.total_miles | miles }} mi</strong>
+       for <strong>{{ best_round_trip.total_rate_cents | money }}</strong> =
+       <strong class="spark">{{ best_round_trip.rpm_cents | rpm }}/mi all-in</strong>
+       (vs {{ l.rate_per_mile_cents | rpm }}/mi on the headhaul alone).</p>
+    {% endif %}
+    <table class="breakdown">
+      <tr><th>Backhaul load</th><th>Empty to pickup</th><th>Rate/mi</th></tr>
+      {% for b in backhauls %}
+      <tr>
+        <td><a href="/loads/{{ b.load.id }}">{{ b.load.origin_city }}, {{ b.load.origin_state }} → {{ b.load.dest_city }}, {{ b.load.dest_state }}</a></td>
+        <td>{{ b.connect_miles | miles }} mi</td>
+        <td>{{ b.candidate_rpm_cents | rpm }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No backhaul loads logged near this drop yet. As you log more loads, pairings that get you loaded for the return appear here.</p>
+  {% endif %}
+</section>
+
+<section>
   <h2>Broker</h2>
   {% if broker %}
     <dl class="facts">

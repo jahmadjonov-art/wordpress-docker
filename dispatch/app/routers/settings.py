@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..templating import templates
 from ..scoring.engine import rescore_all
-from ..integrations import eia, fmcsa
+from ..integrations import eia, fmcsa, usda
 from ..ai import negotiate
 from .. import models, config
 
@@ -24,6 +24,7 @@ def settings_form(request: Request, db: Session = Depends(get_db)):
             "eia_configured": bool(config.EIA_API_KEY),
             "fmcsa_configured": fmcsa.configured(),
             "ai_configured": negotiate.configured(),
+            "usda_configured": usda.configured(),
             "routing": "ORS" if config.ORS_API_KEY else ("OSRM" if config.OSRM_URL else "great-circle fallback"),
         },
     )
@@ -60,5 +61,12 @@ def save_settings(
 @router.post("/refresh-fuel")
 def refresh_fuel(db: Session = Depends(get_db)):
     eia.refresh(db)
+    rescore_all(db)
+    return RedirectResponse("/settings/", status_code=303)
+
+
+@router.post("/refresh-produce")
+def refresh_produce(db: Session = Depends(get_db)):
+    usda.refresh(db)
     rescore_all(db)
     return RedirectResponse("/settings/", status_code=303)

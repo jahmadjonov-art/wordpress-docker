@@ -12,6 +12,15 @@ EIA_API_KEY = os.getenv("EIA_API_KEY", "").strip()
 FMCSA_WEBKEY = os.getenv("FMCSA_WEBKEY", "").strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 
+# USDA AMS MyMarketNews (MARS) — free key for produce truck-rate seeds.
+# https://mymarketnews.ams.usda.gov/ -> request an API key, then point
+# USDA_TRUCK_REPORT_SLUG at a truck-rate report and USDA_RPM_FIELD at the
+# field that holds a per-mile rate. Leave blank to use built-in reference rates.
+USDA_API_KEY = os.getenv("USDA_API_KEY", "").strip()
+USDA_TRUCK_REPORT_SLUG = os.getenv("USDA_TRUCK_REPORT_SLUG", "").strip()
+USDA_RPM_FIELD = os.getenv("USDA_RPM_FIELD", "avg_mileage_rate").strip()
+USDA_EQUIPMENT = os.getenv("USDA_EQUIPMENT", "reefer").strip()
+
 # Model used for the negotiation letter. Opus 4.8 is the current default.
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-8")
 

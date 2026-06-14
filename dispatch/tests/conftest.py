@@ -22,6 +22,7 @@ def db():
     session.query(models.Load).delete()
     session.query(models.LaneStat).delete()
     session.query(models.Broker).delete()
+    session.query(models.ReferenceRate).delete()
     session.commit()
     try:
         yield session

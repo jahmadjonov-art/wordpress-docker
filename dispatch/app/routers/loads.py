@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..templating import templates
 from ..scoring.engine import score_and_save
-from ..scoring import broker_rating
+from ..scoring import broker_rating, backhaul
 from ..integrations import routing, fmcsa
 from ..ai import negotiate
 from .. import models, config
@@ -88,6 +88,10 @@ def load_detail(load_id: int, request: Request, db: Session = Depends(get_db)):
         return templates.TemplateResponse("loads/not_found.html", {"request": request}, status_code=404)
     latest = load.scores[0] if load.scores else None
     breakdown = json.loads(latest.breakdown_json) if latest else []
+
+    backhauls = backhaul.find_backhauls(db, load)
+    best_round_trip = backhaul.round_trip(load, backhauls[0]) if backhauls else None
+
     broker = None
     if load.broker_mc:
         broker = db.execute(
@@ -102,6 +106,8 @@ def load_detail(load_id: int, request: Request, db: Session = Depends(get_db)):
             "breakdown": breakdown,
             "broker": broker,
             "broker_label": broker_rating.label(broker.reliability_elo) if broker else None,
+            "backhauls": backhauls,
+            "best_round_trip": best_round_trip,
             "fmcsa_configured": fmcsa.configured(),
             "ai_configured": negotiate.configured(),
         },

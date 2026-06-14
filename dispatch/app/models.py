@@ -153,6 +153,22 @@ class LoadOutcome(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class ReferenceRate(Base):
+    """External/seed benchmark rate by equipment + region (e.g. from USDA AMS).
+
+    Consulted by the cold-start reference before the static baseline. Empty
+    table = fall back to the built-in defaults, so the app works with no feed.
+    """
+    __tablename__ = "reference_rates"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    equipment: Mapped[str] = mapped_column(String(16), index=True)
+    region: Mapped[str] = mapped_column(String(32), default="US", index=True)
+    rpm_cents: Mapped[int] = mapped_column(Integer)
+    source: Mapped[str] = mapped_column(String(32), default="usda_ams")
+    period: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class JobRun(Base):
     __tablename__ = "job_runs"
     id: Mapped[int] = mapped_column(primary_key=True)

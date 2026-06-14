@@ -22,8 +22,35 @@ BASELINE_RPM_CENTS = {
 MIN_COMPS_FOR_LANE = 5
 
 
-def reference_rpm_cents(equipment: str, when: date | None, origin_state: str | None) -> tuple[int, str | None]:
-    """Return (reference rate/mi in cents, optional season note)."""
-    base = BASELINE_RPM_CENTS.get(equipment, BASELINE_RPM_CENTS["van"])
+def reference_rpm_cents(equipment: str, when: date | None, origin_state: str | None,
+                        base_override: int | None = None) -> tuple[int, str | None]:
+    """Return (reference rate/mi in cents, optional season note).
+
+    base_override lets a live feed (e.g. USDA AMS, see ReferenceRate) supply the
+    pre-seasonal baseline; falls back to the built-in default when None.
+    """
+    base = base_override if base_override else BASELINE_RPM_CENTS.get(equipment, BASELINE_RPM_CENTS["van"])
     factor, note = seasonality.reefer_factor(equipment, when, region_for(origin_state))
     return (int(round(base * factor)), note)
+
+
+def seed_base_cents(db, equipment: str, origin_state: str | None) -> int | None:
+    """Look up a ReferenceRate seed for this equipment + region, else None."""
+    from sqlalchemy import select
+    from .. import models
+
+    region = region_for(origin_state)
+    row = db.execute(
+        select(models.ReferenceRate).where(
+            models.ReferenceRate.equipment == equipment,
+            models.ReferenceRate.region == region,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        row = db.execute(
+            select(models.ReferenceRate).where(
+                models.ReferenceRate.equipment == equipment,
+                models.ReferenceRate.region == "US",
+            )
+        ).scalar_one_or_none()
+    return row.rpm_cents if row else None
