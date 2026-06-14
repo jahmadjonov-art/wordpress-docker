@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Score a load{% endblock %}
+{% block content %}
+<h1>Score a load</h1>
+<p class="muted">Paste what the broker gave you. We'll geocode the lane, compute the miles and cost-per-mile,
+score it against loads you've seen on similar lanes, and tell you the rate to push for. Leave
+loaded miles blank to let routing fill it in.</p>
+
+<form method="post" action="/loads/new" class="grid-form">
+  <label>Origin city <input type="text" name="origin_city" required placeholder="Dallas"></label>
+  <label>Origin state <input type="text" name="origin_state" maxlength="2" required placeholder="TX"></label>
+  <label>Dest city <input type="text" name="dest_city" required placeholder="Atlanta"></label>
+  <label>Dest state <input type="text" name="dest_state" maxlength="2" required placeholder="GA"></label>
+
+  <label>Equipment
+    <select name="equipment">
+      {% for e in equipment_types %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Offered rate ($) <input type="number" step="1" name="rate_total" placeholder="2200"></label>
+  <label>Loaded miles (optional) <input type="number" step="1" name="loaded_miles" placeholder="auto"></label>
+  <label>Deadhead miles <input type="number" step="1" name="deadhead_miles" value="0"></label>
+
+  <label>Weight (lbs) <input type="number" name="weight_lbs"></label>
+  <label>Commodity <input type="text" name="commodity" placeholder="dry goods"></label>
+  <label>Pickup date <input type="date" name="pickup_date"></label>
+
+  <label>Broker name <input type="text" name="broker_name"></label>
+  <label>Broker MC # <input type="text" name="broker_mc" placeholder="123456"></label>
+  <label>Lumper / accessorial ($) <input type="number" step="1" name="lumper_fee" placeholder="0"></label>
+  <label>Payment terms
+    <select name="payment_terms">
+      <option value="">— (assume factored)</option>
+      <option value="quickpay">quick-pay</option>
+      <option value="net7">net 7 / ACH</option>
+      <option value="net15">net 15</option>
+      <option value="net30">net 30</option>
+    </select>
+  </label>
+
+  <label class="full">Notes (paste the load description — risk keywords like "no detention", "lumper", "tarp" affect the score)
+    <textarea name="notes" rows="5"></textarea>
+  </label>
+  <button type="submit">Compute & score</button>
+</form>
+{% endblock %}

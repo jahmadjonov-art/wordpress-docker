@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+
+<section>
+  <h2>Truck economics</h2>
+  <p class="muted">These drive the cost-per-mile, profit, and target-rate numbers. Saving re-scores every load.</p>
+  <form method="post" action="/settings/" class="grid-form">
+    <label>Miles per gallon <input type="number" step="0.1" name="mpg" value="{{ s.mpg }}"></label>
+    <label>Fixed monthly cost ($) <input type="number" step="1" name="fixed_monthly" value="{{ (s.fixed_monthly_cents / 100) | round(0, 'floor') }}"></label>
+    <label>Avg monthly miles <input type="number" step="1" name="avg_monthly_miles" value="{{ s.avg_monthly_miles }}"></label>
+    <label>Maintenance ¢/mile <input type="number" step="1" name="maint_cpm" value="{{ s.maint_cpm_cents }}"></label>
+    <label>Target margin (%) <input type="number" step="1" name="target_margin_pct" value="{{ s.target_margin_pct }}"></label>
+    <label>Factoring fee (%) <input type="number" step="0.1" name="factoring_pct" value="{{ s.factoring_pct }}"></label>
+    <label>Avg truck speed (mph) <input type="number" step="1" name="avg_speed_mph" value="{{ s.avg_speed_mph }}"></label>
+    <label>Detention free hrs <input type="number" step="0.5" name="detention_free_hours" value="{{ s.detention_free_hours }}"></label>
+    <label>Detention $/hr <input type="number" step="1" name="detention_rate" value="{{ (s.detention_rate_cents / 100) | round(0, 'floor') }}"></label>
+    <button type="submit">Save & re-score all</button>
+  </form>
+</section>
+
+<section>
+  <h2>Data sources</h2>
+  <dl class="facts">
+    <dt>Routing / miles</dt><dd>{{ routing }}</dd>
+    <dt>Diesel price</dt>
+    <dd>
+      {{ diesel_cpg | rpm }}/gal
+      {% if eia_configured %}(EIA){% else %}(default — add <code>EIA_API_KEY</code> for live){% endif %}
+    </dd>
+    <dt>Broker check</dt><dd>{% if fmcsa_configured %}FMCSA enabled{% else %}off — add <code>FMCSA_WEBKEY</code>{% endif %}</dd>
+    <dt>Produce rate seed</dt><dd>{% if usda_configured %}USDA AMS enabled{% else %}off — built-in reference (add <code>USDA_API_KEY</code> + report slug){% endif %}</dd>
+    <dt>AI negotiation</dt><dd>{% if ai_configured %}enabled{% else %}dormant — add <code>ANTHROPIC_API_KEY</code>{% endif %}</dd>
+  </dl>
+  <div class="actions">
+  {% if eia_configured %}
+  <form method="post" action="/settings/refresh-fuel"><button>Refresh diesel price now</button></form>
+  {% endif %}
+  {% if usda_configured %}
+  <form method="post" action="/settings/refresh-produce"><button>Refresh produce rates now</button></form>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}

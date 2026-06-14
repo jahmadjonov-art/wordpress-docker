@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dispatch dashboard</h1>
+
+<div class="cards">
+  <div class="card"><div class="label">Active loads</div><div class="big">{{ total_active }}</div></div>
+  <div class="card"><div class="label">Booked</div><div class="big">{{ booked }}</div></div>
+  <div class="card"><div class="label">Lane benchmarks</div><div class="big">{{ lanes }}</div></div>
+  <div class="card"><div class="label">Diesel (cached)</div><div class="big">{{ diesel_cpg | rpm }}/gal</div></div>
+</div>
+
+{% if best %}
+{% set s = best.scores[0] %}
+<section>
+  <h2>Top load right now</h2>
+  <a class="deal-card" href="/loads/{{ best.id }}" style="max-width:420px;">
+    <div class="score score-{{ s.score // 15 }}">{{ s.score }}</div>
+    <div class="title">{{ best.origin_city }}, {{ best.origin_state }} → {{ best.dest_city }}, {{ best.dest_state }}</div>
+    <div class="meta">{{ best.equipment }} · {{ best.loaded_miles | miles }} mi · {{ best.rate_per_mile_cents | rpm }}/mi</div>
+    <div class="price">{{ best.rate_total_cents | money }}</div>
+    {% if s.suggested_target_rate_cents %}<div class="muted src">target {{ s.suggested_target_rate_cents | money }}</div>{% endif %}
+  </a>
+</section>
+{% endif %}
+
+<section>
+  <h2>Recent loads</h2>
+  <div class="deal-grid">
+  {% for l in recent %}
+    {% set sc = l.scores[0] if l.scores else None %}
+    <a class="deal-card" href="/loads/{{ l.id }}">
+      <div class="score score-{{ (sc.score // 15) if sc else 3 }}">{{ sc.score if sc else "?" }}</div>
+      <div class="title">{{ l.origin_city }}, {{ l.origin_state }} → {{ l.dest_city }}, {{ l.dest_state }}</div>
+      <div class="meta">{{ l.equipment }}{% if l.loaded_miles %} · {{ l.loaded_miles | miles }} mi{% endif %}{% if l.rate_per_mile_cents %} · {{ l.rate_per_mile_cents | rpm }}/mi{% endif %}</div>
+      <div class="price">{{ l.rate_total_cents | money }}</div>
+    </a>
+  {% else %}
+    <p class="muted">No loads yet. <a href="/loads/new">Score your first load</a>.</p>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}

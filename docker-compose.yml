@@ -23,5 +23,30 @@ services:
     depends_on:
       - finance
 
+  dispatch:
+    build: ./dispatch
+    ports:
+      - "8003:8000"
+    volumes:
+      - dispatch_data:/data
+      - ./dispatch/app:/srv/app
+    restart: unless-stopped
+    env_file:
+      - ./dispatch/.env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  dispatch-worker:
+    build: ./dispatch
+    volumes:
+      - dispatch_data:/data
+      - ./dispatch/app:/srv/app
+    restart: unless-stopped
+    env_file:
+      - ./dispatch/.env
+    command: python -m app.worker
+    depends_on:
+      - dispatch
+
 volumes:
   finance_data:
+  dispatch_data:

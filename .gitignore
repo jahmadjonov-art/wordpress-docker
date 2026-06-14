@@ -1,5 +1,7 @@
 finance/.env
 finance/data/
+dispatch/.env
+dispatch/data/
 __pycache__/
 *.pyc
 terraform/.terraform/
